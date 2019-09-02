@@ -7,6 +7,7 @@
 #include <WiFi.h>
 #include <Wire.h>  // Used for I2C communication
 #include <SFE_MicroOLED.h>  // Include the SFE_MicroOLED library
+#include <WebSocketsServer.h>
 #include "MLX90640_API.h"
 #include "MLX90640_I2C_Driver.h"
 #include "env.h"
@@ -20,6 +21,10 @@ MicroOLED oled(PIN_RESET, DC_JUMPER);    // I2C declaration
 const char* ssid     = wifi_ssid;
 const char* password = wifi_pw;
 WiFiServer server(80);
+
+
+//declare socket related variables
+WebSocketsServer webSocket = WebSocketsServer(81);
 
 // MLX90640 variables
 const byte MLX90640_address = 0x33; //Default 7-bit unshifted address of the MLX90640
@@ -93,12 +98,18 @@ void setup()
         Serial.println("Parameter extraction failed");
     }
     MLX90640_SetRefreshRate(MLX90640_address, 0x02);
+
+    webSocket.begin();
+    webSocket.onEvent(webSocketEvent);
 }
 
 int value = 0;
 int count = 100000;
+int dataVal = 0;
 
 void loop(){
+  webSocket.loop();
+
   if (count >= 100000) {
     long startTime = millis();
     for (byte x = 0 ; x < 2 ; x++) //Read both subpages
@@ -119,17 +130,29 @@ void loop(){
 
       MLX90640_CalculateTo(mlx90640Frame, &mlx90640, emissivity, tr, mlx90640To);
     }
+    
     count = 0;
     long stopReadTime = millis();
     Serial.print("Read rate: ");
     Serial.print( 1000.0 / (stopReadTime - startTime), 2);
     Serial.println(" Hz");
+    String resultText = "IR Read: ";
+    
+    float maxReading = mlx90640To[0];
+    for (int x = 1 ; x < 768 ; x++)
+    {
+      if ( mlx90640To[x] > maxReading) {
+        maxReading = mlx90640To[x];
+      }
+    }
+    resultText.concat(maxReading);
+    webSocket.broadcastTXT(resultText);
   }
   count = count + 1;
   
   WiFiClient client = server.available();   // listen for incoming clients
 
-  if (client) {                             
+  if (client) {
     Serial.println("New Client.");
     String currentLine = "";
     while (client.connected()) {
@@ -137,6 +160,7 @@ void loop(){
         char c = client.read();
         Serial.write(c);
         if (c == '\n') {
+
           // if the current line is blank, you got two newline characters in a row.
           // that's the end of the client HTTP request, so send a response:
           if (currentLine.length() == 0) {
@@ -147,17 +171,8 @@ void loop(){
             client.println();
 
             // the content of the HTTP response follows the header:
-            for (int x = 0 ; x < 768 ; x++)
-            {
-                client.print("<span>");
-                client.print(mlx90640To[x], 1);
-                client.print("</span>");                    
-                if( (x + 1) % 32 == 0 && x != 0) {
-                  client.print("<br />");
-                } else {
-                  client.print("<span>, </span>");
-                }
-            }
+            // Add content here
+            
             // The HTTP response ends with another blank line:
             client.println();
             // break out of the while loop:
@@ -176,8 +191,37 @@ void loop(){
   }
 }
 
-//Returns true if the MLX90640 is detected on the I2C bus
+void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length) {
+    switch(type) {
+        case WStype_DISCONNECTED:
+            Serial.println("Socket Disconnected.");
+            break;
+        case WStype_CONNECTED:
+            {
+                IPAddress ip = webSocket.remoteIP(num);
+                Serial.println("Socket Connected.");
+                // send message to client
+                webSocket.sendTXT(num, "Connected");
+            }
+            break;
+        case WStype_TEXT:
+            // send message to client
+            webSocket.sendTXT(num, "message here");
 
+            // send data to all connected clients
+            // webSocket.broadcastTXT("message here");
+            break;
+        case WStype_BIN:
+        case WStype_ERROR:      
+        case WStype_FRAGMENT_TEXT_START:
+        case WStype_FRAGMENT_BIN_START:
+        case WStype_FRAGMENT:
+        case WStype_FRAGMENT_FIN:
+            break;
+    }
+}
+
+//Returns true if the MLX90640 is detected on the I2C bus
 boolean isConnected()
 {
   Wire.beginTransmission((uint8_t)MLX90640_address);

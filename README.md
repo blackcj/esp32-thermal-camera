@@ -23,6 +23,7 @@ MLX90640 thermal camera connected to a SparkFun Thing Plus - ESP32 WROOM
 3. Make sure to select **Adafruit ESP32 Feather** in the Arduino IDE
 4. Install the following libraries
    - SparkFun_Micro_OLED_Breakout
+   - WebSocketsServer
 5. Flash the code on your device
 6. Navigate to the IP address from the serial monitor
 
