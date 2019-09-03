@@ -11,6 +11,7 @@ MLX90640 thermal camera connected to a SparkFun Thing Plus - ESP32 WROOM
 
 **Total Cost: ~$115**
 
+> NOTE: You'll also need a micro usb cable to power (and flash) the ESP32. I'm making the assumption that most people have one of these. If you want to make the project portable, you'll also need a battery bank.
 
 ## Setup
 
@@ -27,8 +28,17 @@ MLX90640 thermal camera connected to a SparkFun Thing Plus - ESP32 WROOM
 5. Flash the code on your device
 6. Navigate to the IP address from the serial monitor
 
+## Message Queue
+
+When using both cores of the ESP32, a message queue must be used to send data between the cores. Sharing variables in the global scope will lead to memory issues and will cause problems.
 
 ## Resources
 
 - https://github.com/melexis/mlx90640-library
 - https://github.com/sparkfun/SparkFun_MLX90640_Arduino_Example
+- http://minifycode.com/html-minifier/
+- https://techtutorialsx.com/2017/11/01/esp32-arduino-websocket-client/
+- http://www.iotsharing.com/2017/06/arduino-esp32-freertos-how-to-use-message-queue.html
+- http://www.iotsharing.com/2017/05/how-to-turn-esp32-into-web-server.html
+- http://www.iotsharing.com/2017/06/arduino-esp32-freertos-how-to-use-task-param-task-priority-task-handle.html
+- https://medium.com/@mudassar.tamboli/esp32-ov7670-websocket-video-camera-26c35aedcc64

@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang='en'>
+<head>
+    <meta charset='UTF-8'>
+    <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+    <title>Document</title>
+    <script>
+    function percentToRGB(percent) {
+        if (percent === 100) {
+            percent = 99
+        }
+        var r, g, b;
+
+        if (percent < 50) {
+            // green to yellow
+            r = Math.floor(255 * (percent / 50));
+            g = 255;
+
+        } else {
+            // yellow to red
+            r = 255;
+            g = Math.floor(255 * ((50 - percent % 50) / 50));
+        }
+        b = 0;
+
+        return 'rgb(' + r + ',' + g + ',' + b + ')';
+    }
+    let connection = new WebSocket('ws://192.168.1.146:81');
+    connection.onopen = function () {
+        connection.send('Ping'); // Send the message 'Ping' to the server
+    };
+    // Log errors
+    connection.onerror = function (error) {
+        console.log('WebSocket Error ' + error);
+    };
+
+    // Log messages from the server
+    connection.onmessage = function (e) {
+        console.log('Server: ' + e.data);
+        const tempValues = e.data.split(',');
+        let high = -100;
+        let low = 200;
+        for(let i = 0; i < tempValues.length; i += 1) {
+            if (tempValues[i] < 120 && tempValues[i] > high) {
+                high = parseInt(tempValues[i]);
+            }
+            if (tempValues[i] < low) {
+                low = parseInt(tempValues[i]);
+            }
+        }
+        high += 2;
+        low -= 2;
+        var c2 = document.getElementById('myCanvas');
+        var c2_context = c2.getContext('2d');
+        let xPos = 460;
+        let yPos = 0;
+        for(let i = 0; i < tempValues.length; i += 1) {
+            let value = ((tempValues[i] - low) / (high - low)) * 100;
+            c2_context.fillStyle = percentToRGB(value);
+            c2_context.fillRect(xPos, yPos, 20, 20);
+            yPos += 20;
+            if (i > 0 && (i + 1) % 32 === 0) {
+                xPos -= 20;
+                yPos = 0;
+            }
+        } 
+    };
+    </script>
+</head>
+<body>
+    <canvas id='myCanvas' width='480' height='640' style='border:1px solid #d3d3d3;'></canvas>
+</body>
+</html>
