@@ -28,9 +28,12 @@ WiFiServer server(80);
 WebSocketsServer webSocket = WebSocketsServer(81);
 
 // MLX90640 variables
-
 #define TA_SHIFT 8 //Default shift for MLX90640 in open air
 static float mlx90640To[768];
+
+// Used to compress data to the client
+char positive[27] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+char negative[27] = "abcdefghijklmnopqrstuvwxyz";
 
 TaskHandle_t TaskA;
 /* this variable hold queue handle */
@@ -143,7 +146,7 @@ void Task1( void * parameter )
 {
     int tick = 0;
     const byte MLX90640_address = 0x33; //Default 7-bit unshifted address of the MLX90640
-    const TickType_t xDelay = 125 / portTICK_PERIOD_MS; // 8 Hz is 1/8 second
+    
     MicroOLED oled(PIN_RESET, DC_JUMPER);    // I2C declaration
     Wire.setClock(400000L);
     Wire.begin();
@@ -207,7 +210,7 @@ void Task1( void * parameter )
 //      Serial.print( 1000.0 / (stopReadTime - startTime), 2);
 //      Serial.println(" Hz");
       tick += 1;
-      if (tick > 4) {
+      if (tick > 20) {
         float maxReading = mlx90640To[0];
         for (int x = 0 ; x < 768 ; x++)
         {
@@ -227,6 +230,8 @@ void Task1( void * parameter )
       /* time to block the task until the queue has free space */
       const TickType_t xTicksToWait = pdMS_TO_TICKS(100);
       xQueueSendToFront( xQueue, &mlx90640Background, xTicksToWait );
+      
+      const TickType_t xDelay = 20 / portTICK_PERIOD_MS; // 8 Hz is 1/8 second
       vTaskDelay(xDelay);
   }
 }
@@ -242,15 +247,7 @@ void receiveTask( void * parameter )
     xStatus = xQueueReceive( xQueue, &mlx90640To, xTicksToWait );
     /* check whether receiving is ok or not */
     if(xStatus == pdPASS){
-      String resultText = "";
-      for (int x = 0 ; x < 768 ; x++)
-      {
-        resultText.concat((int)(mlx90640To[x]*1.8+32));
-        if (x < 767) {
-          resultText.concat(",");
-        }
-      }
-      webSocket.broadcastTXT(resultText);
+      compressAndSend();
       total += 1;
     }
   }
@@ -282,4 +279,76 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length
         case WStype_FRAGMENT_FIN:
             break;
     }
+}
+
+// Some precision is lost during compression but data transfer speeds are
+// much faster. We're able to get a higher frame rate by compressing data.
+void compressAndSend() 
+{
+    String resultText = "";
+    int numDecimals = 1;
+    int accuracy = 8;
+    int previousValue = round(mlx90640To[0] * pow(10, numDecimals));
+    previousValue = previousValue - (previousValue % accuracy);
+    resultText.concat(numDecimals);
+    resultText.concat(accuracy);
+    resultText.concat(previousValue);
+    resultText.concat(".");
+    char currentLetter = 'A';
+    char previousLetter = 'A';
+    int letterCount = 1;
+    int columnCount = 32;
+    
+    for (int x = 1 ; x < 768; x += 1)
+    {
+        int currentValue = round(mlx90640To[x] * pow(10, numDecimals));
+        currentValue = currentValue - (currentValue % accuracy);
+        if(x % columnCount == 0) {
+            previousValue = round(mlx90640To[x - columnCount] * pow(10, numDecimals));
+            previousValue = previousValue - (previousValue % accuracy);
+        }
+        int correction = 0;
+        int diffIndex = (int)(currentValue - previousValue);
+        if(abs(diffIndex) > 0) {
+            diffIndex = diffIndex / accuracy;
+        }
+        if(diffIndex > 25) {
+            //correction = (diffIndex - 25) * accuracy;
+            diffIndex = 25;
+        } else if(diffIndex < -25) {
+            //correction = (diffIndex + 25) * accuracy;
+            diffIndex = -25;
+        }
+
+        if(diffIndex >= 0) {
+            currentLetter = positive[diffIndex];
+        } else {
+            currentLetter = negative[abs(diffIndex)];
+        }
+        
+        if(x == 1) {
+            previousLetter = currentLetter;
+        } else if(currentLetter != previousLetter) {
+            
+            if(letterCount == 1) {
+                resultText.concat(previousLetter);
+            } else {
+                resultText.concat(letterCount);
+                resultText.concat(previousLetter);
+            }
+            previousLetter = currentLetter;
+            letterCount = 1;
+        } else {
+            letterCount += 1;
+        }
+        
+        previousValue = currentValue - correction;
+    }
+    if(letterCount == 1) {
+        resultText.concat(previousLetter);
+    } else {
+        resultText.concat(letterCount);
+        resultText.concat(previousLetter);
+    }
+    webSocket.broadcastTXT(resultText);
 }
