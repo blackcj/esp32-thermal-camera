@@ -97,58 +97,17 @@ void setup()
     if (status != 0) {
         Serial.println("Parameter extraction failed");
     }
-    MLX90640_SetRefreshRate(MLX90640_address, 0x02);
-
+    MLX90640_SetRefreshRate(MLX90640_address, 0x03);
+    Wire.setClock(1000000L);
     webSocket.begin();
     webSocket.onEvent(webSocketEvent);
 }
 
 int value = 0;
-int count = 100000;
 int dataVal = 0;
 
 void loop(){
   webSocket.loop();
-
-  if (count >= 100000) {
-    long startTime = millis();
-    for (byte x = 0 ; x < 2 ; x++) //Read both subpages
-    {
-      uint16_t mlx90640Frame[834];
-      int status = MLX90640_GetFrameData(MLX90640_address, mlx90640Frame);
-      if (status < 0)
-      {
-        Serial.print("GetFrame Error: ");
-        Serial.println(status);
-      }
-  
-      float vdd = MLX90640_GetVdd(mlx90640Frame, &mlx90640);
-      float Ta = MLX90640_GetTa(mlx90640Frame, &mlx90640);
-
-      float tr = Ta - TA_SHIFT; //Reflected temperature based on the sensor ambient temperature
-      float emissivity = 0.95;
-
-      MLX90640_CalculateTo(mlx90640Frame, &mlx90640, emissivity, tr, mlx90640To);
-    }
-    
-    count = 0;
-    long stopReadTime = millis();
-    Serial.print("Read rate: ");
-    Serial.print( 1000.0 / (stopReadTime - startTime), 2);
-    Serial.println(" Hz");
-    String resultText = "IR Read: ";
-    
-    float maxReading = mlx90640To[0];
-    for (int x = 1 ; x < 768 ; x++)
-    {
-      if ( mlx90640To[x] > maxReading) {
-        maxReading = mlx90640To[x];
-      }
-    }
-    resultText.concat(maxReading);
-    webSocket.broadcastTXT(resultText);
-  }
-  count = count + 1;
   
   WiFiClient client = server.available();   // listen for incoming clients
 
@@ -191,6 +150,56 @@ void loop(){
   }
 }
 
+void captureThermalImage() {
+  Serial.println("Capturing thermal image");
+  long startTime = millis();
+    for (byte x = 0 ; x < 2 ; x++) //Read both subpages
+    {
+      uint16_t mlx90640Frame[834];
+      int status = MLX90640_GetFrameData(MLX90640_address, mlx90640Frame);
+      if (status < 0)
+      {
+        Serial.print("GetFrame Error: ");
+        Serial.println(status);
+      }
+  
+      float vdd = MLX90640_GetVdd(mlx90640Frame, &mlx90640);
+      float Ta = MLX90640_GetTa(mlx90640Frame, &mlx90640);
+
+      float tr = Ta - TA_SHIFT; //Reflected temperature based on the sensor ambient temperature
+      float emissivity = 0.95;
+
+      MLX90640_CalculateTo(mlx90640Frame, &mlx90640, emissivity, tr, mlx90640To);
+    }
+    
+    long stopReadTime = millis();
+    Serial.print("Read rate: ");
+    Serial.print( 1000.0 / (stopReadTime - startTime), 2);
+    Serial.println(" Hz");
+    String resultText = "";
+    
+    float maxReading = mlx90640To[0];
+    for (int x = 0 ; x < 768 ; x++)
+    {
+      resultText.concat(mlx90640To[x]);
+      if (x < 767) {
+        resultText.concat(",");
+      }
+      if ( mlx90640To[x] > maxReading) {
+        maxReading = mlx90640To[x];
+      }
+    }
+    maxReading = maxReading * 1.8 + 32;
+    String output = "Max:";
+    output.concat(maxReading);
+    oled.setCursor(0, 0);
+    oled.clear(PAGE); // Clear the buffer
+    oled.print(output);
+    oled.display(); // Draw on the screen
+    
+    webSocket.broadcastTXT(resultText);
+}
+
 void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length) {
     switch(type) {
         case WStype_DISCONNECTED:
@@ -206,8 +215,8 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length
             break;
         case WStype_TEXT:
             // send message to client
-            webSocket.sendTXT(num, "message here");
-
+            // webSocket.sendTXT(num, "message here");
+            captureThermalImage();
             // send data to all connected clients
             // webSocket.broadcastTXT("message here");
             break;
