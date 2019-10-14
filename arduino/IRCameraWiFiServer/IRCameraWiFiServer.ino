@@ -16,7 +16,7 @@
 // MicroOLED variables
 #define PIN_RESET 9  
 #define DC_JUMPER 1 
-MicroOLED oled(PIN_RESET, DC_JUMPER);    // I2C declaration
+// MicroOLED oled(PIN_RESET, DC_JUMPER);    // I2C declaration
 
 // WiFi variables
 const char* ssid     = wifi_ssid;
@@ -28,7 +28,7 @@ WiFiServer server(80);
 WebSocketsServer webSocket = WebSocketsServer(81);
 
 // MLX90640 variables
-#define TA_SHIFT 8 //Default shift for MLX90640 in open air
+#define TA_SHIFT -64; // Default shift for MLX90640 in open air is 8
 static float mlx90640To[768];
 
 // Used to compress data to the client
@@ -119,7 +119,10 @@ void loop(){
             client.println("HTTP/1.1 200 OK");
             client.println("Content-type:text/html");
             client.println();
-
+            client.print("<script>const ipAddress = '"); 
+            client.print(WiFi.localIP());
+            client.print("'</script>");
+            client.println();
             // the content of the HTTP response follows the header:
             client.print(canvas_htm);
             
@@ -147,17 +150,17 @@ void Task1( void * parameter )
     int tick = 0;
     const byte MLX90640_address = 0x33; //Default 7-bit unshifted address of the MLX90640
     
-    MicroOLED oled(PIN_RESET, DC_JUMPER);    // I2C declaration
+    //MicroOLED oled(PIN_RESET, DC_JUMPER);    // I2C declaration
     Wire.setClock(400000L);
     Wire.begin();
     
-    oled.begin();    // Initialize the OLED
-    oled.clear(ALL); // Clear the display's internal memory
-    oled.display();  // Display what's in the buffer (splashscreen)
-    delay(1000);     // Delay 1000 ms
-    oled.clear(PAGE); // Clear the buffer
-    oled.print("Test");
-    oled.display(); // Draw on the screen
+    //oled.begin();    // Initialize the OLED
+    //oled.clear(ALL); // Clear the display's internal memory
+    //oled.display();  // Display what's in the buffer (splashscreen)
+    //delay(1000);     // Delay 1000 ms
+    //oled.clear(PAGE); // Clear the buffer
+    //oled.print("Test");
+    //oled.display(); // Draw on the screen
     paramsMLX90640 mlx90640;
     Wire.beginTransmission((uint8_t)MLX90640_address);
     if (Wire.endTransmission() != 0) {
@@ -221,10 +224,10 @@ void Task1( void * parameter )
         maxReading = maxReading * 1.8 + 32;
         String output = "Max:";
         output.concat(maxReading);
-        oled.setCursor(0, 0);
-        oled.clear(PAGE); // Clear the buffer
-        oled.print(output);
-        oled.display(); // Draw on the screen
+        //oled.setCursor(0, 0);
+        //oled.clear(PAGE); // Clear the buffer
+        //oled.print(output);
+        //oled.display(); // Draw on the screen
         tick = 0;
       }
       /* time to block the task until the queue has free space */
