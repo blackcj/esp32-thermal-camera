@@ -22,22 +22,23 @@ translate([enclosure_width - 27,wall_thickness,5]) {
 //enclosureBase();
 // Position all of the modules
 translate([9,-50,0]) {
-    //lensRound();
+    lensRound();
 }
 
 translate([-enclosure_width - 10,0,0]) {
-    enclosureLid();
+    //enclosureLid();
 }
 
 module enclosureLid() {
     rcube([enclosure_width,enclosure_length,wall_thickness], 6);
 
     difference() {
+        lid_offset = wall_thickness + 0.1;
         // Make the cylinder hollow
-        translate([wall_thickness,wall_thickness,wall_thickness]) {
-            rcube([enclosure_width - wall_thickness * 2, enclosure_length - wall_thickness * 2,2], 5);
+        translate([lid_offset,lid_offset,lid_offset - 0.1]) {
+            rcube([enclosure_width - lid_offset * 2, enclosure_length - lid_offset * 2,2.5], 5.2);
           inner_height = enclosure_height;
-          inner_radius = enclosure_radius - (wall_thickness * 2);
+          inner_radius = enclosure_radius - (lid_offset * 2);
         }
         translate([wall_thickness*2,wall_thickness*2,1]) {
             rcube([enclosure_width - wall_thickness * 4, enclosure_length - wall_thickness * 4,6], 4);
@@ -51,9 +52,9 @@ module enclosureBase() {
     difference() {
         buildBase();
         // Micro usb slot
-        translate([enclosure_width - 19.4,-1,5.5])cube([8.6,4,3.8]);
+        translate([enclosure_width - 19.4,-1,5.7])cube([8.8,4,3.8]);
         // Power switch
-        translate([10,-1,4])cube([14.4,8,8.8]);
+        translate([10,-1,4])cube([14.2,8,8.8]);
         // Camera lense
         translate([9,enclosure_length - 43.5,-2]) {
             translate([21,21,0]) cylinder(r=40.2/2,h=8);
@@ -214,7 +215,7 @@ module screwmountM25() {
     difference() {
         cylinder(r=2.5, h=5);
         translate([0,0,-2]) {
-            cylinder(r=1.3, h=8);
+            cylinder(r=1.35, h=8);
         }
     }
 }
@@ -241,16 +242,19 @@ module frictionmount(pegRadius, pegHeight = 7, lift = 0) {
 
 module lensRound() {
     difference() {
-        translate([21,21,0]) cylinder(r=44/2,h=6);
-        translate([21,21,1]) cylinder(r=38/2,h=12);
+        translate([21,21,0]) cylinder(r=44/2,h=8);
+        translate([21,21,1]) cylinder(r=38/2,h=14);
         translate([21, 21, 0])roundCamera();
     }
     difference() {
-        translate([21,21,0]) cylinder(r=40/2,h=10);
+        translate([21,21,0]) cylinder(r=40/2,h=12);
         translate([21,21,1]) cylinder(r=38/2,h=15);
         translate([21, 21, 0])roundCamera();
+        translate([15,39,9.5])rotate([0,0,0])#cube([12,3,3]);
     }
-    translate([19.5,-1,8])cube([3,3,2]);
+    translate([19.5,-1,10.2])cube([2.7,3.5,1.8]);
+    translate([19.5,-1,10.2])rotate([0,0,11])cube([2.7,3,1.8]);
+    translate([14.5,39,10])rotate([0,0,114])cube([2,3,2]);
     translate([10.8,10.8,0])screwmountA();
     translate([10.8,31.2,0])screwmountC();
     translate([31.2,31.2,0])screwmountA();
@@ -266,7 +270,7 @@ module screwmountA() {
     cylinder(r=4, h=6);
     difference() {
         cylinder(r=3, h=12);
-        cylinder(r=1.3, h=14); 
+        cylinder(r=1.35, h=14); 
     }
 }
 

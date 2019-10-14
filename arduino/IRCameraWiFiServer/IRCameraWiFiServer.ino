@@ -5,6 +5,7 @@
  */
 
 #include <WiFi.h>
+#include <ESPmDNS.h>
 #include <Wire.h>  // Used for I2C communication
 #include <SFE_MicroOLED.h>  // Include the SFE_MicroOLED library
 #include <WebSocketsServer.h>
@@ -53,6 +54,7 @@ void setup()
 
     // Connect to the WiFi network
     WiFi.begin(ssid, password);
+    WiFi.setHostname("esp32thing1");
     int retry = 0;
     while (WiFi.status() != WL_CONNECTED) {
         delay(1000);
@@ -70,6 +72,14 @@ void setup()
     Serial.println("WiFi connected.");
     Serial.println("IP address: ");
     Serial.println(WiFi.localIP());
+
+    if (!MDNS.begin("thermal")) {
+        Serial.println("Error setting up MDNS responder!");
+    } else {
+        MDNS.addService("http", "tcp", 80);
+        MDNS.addService("ws", "tcp", 81);
+        Serial.println("mDNS responder started");
+    }
     
     server.begin();
     

@@ -1,6 +1,8 @@
 # ESP32 Thermal Camera
 
-MLX90640 thermal camera connected to a SparkFun Thing Plus - ESP32 WROOM
+(MLX90640 thermal camera)[https://www.sparkfun.com/products/14844] connected to a (SparkFun Thing Plus - ESP32 WROOM)[https://www.sparkfun.com/products/14689]
+
+![Screen Shot](enclosure/camera01.jpg)
 
 ## Components
 
@@ -12,6 +14,12 @@ MLX90640 thermal camera connected to a SparkFun Thing Plus - ESP32 WROOM
 **Total Cost: ~$115**
 
 > NOTE: You'll also need a micro usb cable to power (and flash) the ESP32. I'm making the assumption that most people have one of these. If you want to make the project portable, you'll also need a battery bank.
+ 
+![Screen Shot](enclosure/camera.gif)
+
+## Mac Drivers
+
+If using a Mac, you will need to install the following (drivers)[https://www.silabs.com/products/development-tools/software/usb-to-uart-bridge-vcp-drivers] to flash the ESP32. More information can be found (here)[https://github.com/espressif/arduino-esp32/issues/1084].
 
 ## Setup
 
@@ -27,6 +35,16 @@ MLX90640 thermal camera connected to a SparkFun Thing Plus - ESP32 WROOM
    - WebSocketsServer
 5. Flash the code on your device
 6. Navigate to the IP address from the serial monitor
+
+![Screen Shot](enclosure/camera02.jpg)
+
+### Notes
+
+In retrospect, the power switch should put the device into a low power mode instead of disconnecting the battery. Keeping the battery connected would allow for charging while the device is 'off'. Right now, it must be turned on to charge the battery.
+
+Additional screw mounts for the enclosure would help to ensure the back stays on. Right now it's easy for the back panel to pop off.
+
+There should be enough room for a micro OLED or LCD panel. 3D printing a support layer would help keep the battery in place and provice something to mount the screen to.
 
 ## Message Queue
 

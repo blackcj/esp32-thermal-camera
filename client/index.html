@@ -24,9 +24,6 @@
         }
     </style>
     <script>
-    if (!ipAddress) {
-        var ipAddress = '192.168.1.141';
-    }
     let startX = 0;
     let moveX = 10;
     const positive = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'];
@@ -102,20 +99,30 @@
         }
         return output;
     }
-    function heatMapColorforValue(value) {
+    function heatMapColorforValue(value, avgLowTemp, avgHighTemp) {
         let h;
         let l = 50;
         let s;
         let a = 1;
-        if (value < 35) {
-            h = 190 + (1.0 - (value / 35)) * 40;
-            l = 50 + value / 1.1;
-            s = 50 + value;
-            a = 0.75;
+        let threshold = 38;
+        let diff = avgHighTemp - avgLowTemp;
+        if (diff < 4) {
+            if (avgHighTemp < 75) {
+                threshold = 100 - (diff * 4);
+            } else if(avgHighTemp > 75) {
+                threshold = (diff * 4);
+            }
+        }
+        if (value < threshold) {//35) {
+            h = 200 + (1.0 - (value / threshold)) * 30;
+            l = 50 + (value / threshold) * 30;
+            s = 60 + (value / threshold) * 35;
+            a = 0.8;
         } else {
-            h = 0 + (1.0 - ((value - 35) / 65)) * 40;
-            l = 20 + (100 - value);
-            s = 100;
+            h = 10 + 40 * (1.0 - ((value - threshold) / threshold));
+            l = 40 + 50 * (1.0 - ((value - threshold) / threshold));//50 * (1.0 - ((value - threshold) / threshold)) + 50;
+            s = 98;
+            a = 0.95;
         }
         return `hsla( ${h}, ${s}%, ${l}%, ${a})`;
     }
@@ -146,7 +153,15 @@
         const output = [];
         let rowNum = 1;
         for (let n = 0; n < input.length; n += 1) {
-            output.push(input[n]);
+            //output.push(n % rowLength);
+            if (n % rowLength === 0) {
+                output.push((input[n] + input[n + 1]) / 2)            
+            } else if (n > 0) {
+                output.push((input[n] + input[n - 1]) / 2)
+            } else {
+                output.push(input[n]);
+            }
+            
             if ((n + 1) % rowLength === 0) {
                 if (input.length - n > rowLength) {
                     for (let r = 1; r <= rowLength * 2 - 1; r++) {
@@ -158,19 +173,25 @@
                         const roundedD = (rowNum * rowLength) + Math.floor((r - 1) / 2);
                         const bottomA = input[roundedC];
                         const bottomB = input[roundedD];
+                        //output.push(0);
                         output.push((topA + topB + bottomA + bottomB) / 4);
                     }
                     rowNum += 1;
                 }
                 // Do nothing
             } else {
+                //output.push(0);
                 output.push((input[n] + input[n + 1]) / 2)
             }
         }
         return output;
     }
-
-    let connection = new WebSocket('ws://' + ipAddress + ':81');
+    let url = 'ws://thermal.local:81';
+    if (typeof ipAddress !== 'undefined') {
+        // Android doesn't support mDNS, use ipAddress if provided
+        url = 'ws://' + ipAddress + ':81';
+    }
+    let connection = new WebSocket(url);
     connection.onopen = function () {
         connection.send('Ping'); // Send the message 'Ping' to the server
     };
@@ -179,11 +200,12 @@
         console.log('WebSocket Error ' + error);
     };
     let avgHighTemp = 0;
+    let avgLowTemp = 0;
     let highTarget = -100;
     let lowTarget = 200;
     let high = -100;
     let low = 200;
-    let counter = 20;
+    let counter = 30;
     // Log messages from the server
     connection.onmessage = function (e) {
         if (e.data.length < 100) {
@@ -192,24 +214,33 @@
         // console.log(e.data);
         const values = decompress(e.data, 32);
         const tempValues = interpolateData(values, 32);
-        if (counter >= 10) {
-            const sortedValues = values.slice().sort();
-            avgHighTemp = 0;
-            for (let w = sortedValues.length - 4; w > sortedValues.length - 9; w -= 1) {
-                avgHighTemp += sortedValues[w];
-            }
-            avgHighTemp = avgHighTemp / 5 * 1.8 + 32;
-            avgHighTemp = parseInt(avgHighTemp * 10) / 10;
-            document.getElementById('temperature').innerText = avgHighTemp + ' F';
+        const sortedValues = values.slice().sort();
+        avgHighTemp = 0;
+        for (let w = sortedValues.length - 3; w > sortedValues.length - 10; w -= 1) {
+            avgHighTemp += sortedValues[w];
+        }
+        avgHighTemp = avgHighTemp / 7;
+        avgLowTemp = 0;
+        for (let w = 4; w < 24; w += 1) {
+            avgLowTemp += sortedValues[w];
+        }
+        avgLowTemp = avgLowTemp / 20;
+        if (counter >= 20) {
+            let avgHighTempF = avgHighTemp * 1.8 + 32;
+            avgHighTempF = parseInt(avgHighTempF * 10) / 10;
+            
+            let avgLowTempF = avgLowTemp * 1.8 + 32;
+            avgLowTempF = parseInt(avgLowTempF * 10) / 10;
+            document.getElementById('temperature').innerText = 'High: ' + avgHighTempF + ' F | Low: ' + avgLowTempF + ' F';
             highTarget = -100;
             lowTarget = 200;
             //console.log(JSON.stringify(tempValues));
-            for (let i = 0; i < tempValues.length; i += 1) {
-                if (tempValues[i] < 120 && tempValues[i] > highTarget) {
-                    highTarget = parseInt(tempValues[i]);
+            for (let i = 0; i < values.length; i += 1) {
+                if (values[i] < 120 && values[i] > highTarget) {
+                    highTarget = parseInt(values[i]);
                 }
-                if (tempValues[i] < lowTarget) {
-                    lowTarget = parseInt(tempValues[i]);
+                if (values[i] < lowTarget) {
+                    lowTarget = parseInt(values[i]);
                 }
             }
             if (highTarget - lowTarget < 10) {
@@ -218,21 +249,25 @@
             // high += 2;
             lowTarget += 1;
             counter = 0;
-
+            return;
         }
         counter += 1;
-        if (low === 200) {
-            low = lowTarget;
-        } else if (low > lowTarget) {
+        if (Math.abs(low - avgLowTemp) < 1.5) {
+            // do nothing
+        } else if (low === 200) {
+            low = avgLowTemp;
+        } else if (low > avgLowTemp) {
             low -= 1;
-        } else if (low < lowTarget) {
+        } else if (low < avgLowTemp) {
             low += 1;
         }
-        if (high === -100) {
-            high = highTarget;
-        } else if (high > highTarget) {
+        if (Math.abs(high - avgHighTemp) < 1.5) {
+            // do nothing
+        } else if (high === -100) {
+            high = avgHighTemp;
+        } else if (high > avgHighTemp) {
             high -= 1;
-        } else if (high < highTarget) {
+        } else if (high < avgHighTemp) {
             high += 1;
         }
 
@@ -242,7 +277,7 @@
         let yPos = 0;
         for (let i = 0; i < tempValues.length; i += 1) {
             let value = ((tempValues[i] - low) / (high - low)) * 100;
-            c2_context.fillStyle = heatMapColorforValue(value);
+            c2_context.fillStyle = heatMapColorforValue(value, low, high);
             c2_context.fillRect(xPos, yPos, 10, 10);
             yPos += 10;
             if (i > 0 && (i + 1) % 63 === 0) {
@@ -268,6 +303,12 @@
     <canvas id='myCanvas' width='470' height='630' style='border:1px solid #d3d3d3;'></canvas>
     <p id='temperature'></p>
     <button class='flipButton' onclick='flip()'>Flip Camera</button>
+    <p id='ip'></p>
 </body>
-
+<script>
+    if (typeof ipAddress !== 'undefined') {
+        // the variable is defined
+        document.getElementById('ip').innerText = 'IP: ' + ipAddress;
+    }
+</script>
 </html>
