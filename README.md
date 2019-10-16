@@ -50,6 +50,8 @@ There should be enough room for a micro OLED or LCD panel. 3D printing a support
 
 When using both cores of the ESP32, a message queue must be used to send data between the cores. Sharing variables in the global scope will lead to memory issues and will cause problems.
 
+![Screen Shot](enclosure/camera03.jpg)
+
 ## Resources
 
 - https://github.com/melexis/mlx90640-library

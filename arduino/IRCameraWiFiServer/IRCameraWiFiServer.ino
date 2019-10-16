@@ -160,17 +160,18 @@ void Task1( void * parameter )
     int tick = 0;
     const byte MLX90640_address = 0x33; //Default 7-bit unshifted address of the MLX90640
     
-    //MicroOLED oled(PIN_RESET, DC_JUMPER);    // I2C declaration
+    MicroOLED oled(PIN_RESET, DC_JUMPER);    // I2C declaration
     Wire.setClock(400000L);
     Wire.begin();
     
-    //oled.begin();    // Initialize the OLED
-    //oled.clear(ALL); // Clear the display's internal memory
+    oled.begin();    // Initialize the OLED
+    oled.clear(ALL); // Clear the display's internal memory
     //oled.display();  // Display what's in the buffer (splashscreen)
-    //delay(1000);     // Delay 1000 ms
-    //oled.clear(PAGE); // Clear the buffer
-    //oled.print("Test");
-    //oled.display(); // Draw on the screen
+    delay(50);
+    oled.clear(PAGE); // Clear the buffer
+    oled.print("Welcome!");
+    delay(400);
+    oled.display(); // Draw on the screen
     paramsMLX90640 mlx90640;
     Wire.beginTransmission((uint8_t)MLX90640_address);
     if (Wire.endTransmission() != 0) {
@@ -223,21 +224,40 @@ void Task1( void * parameter )
 //      Serial.print( 1000.0 / (stopReadTime - startTime), 2);
 //      Serial.println(" Hz");
       tick += 1;
-      if (tick > 20) {
+      if (tick > 10) {
         float maxReading = mlx90640To[0];
+        float minReading = mlx90640To[0];
+        float avgReading = mlx90640To[0];
         for (int x = 0 ; x < 768 ; x++)
         {
+          if (isnan(mlx90640To[x])) {
+            continue;
+          }
+          avgReading = (avgReading + mlx90640To[x]) / 2;
           if ( mlx90640To[x] > maxReading) {
             maxReading = mlx90640To[x];
           }
+          if ( mlx90640To[x] < minReading) {
+            minReading = mlx90640To[x];
+          }
         }
+        avgReading = avgReading * 1.8 + 32;
         maxReading = maxReading * 1.8 + 32;
+        minReading = minReading * 1.8 + 32;
         String output = "Max:";
         output.concat(maxReading);
-        //oled.setCursor(0, 0);
-        //oled.clear(PAGE); // Clear the buffer
-        //oled.print(output);
-        //oled.display(); // Draw on the screen
+        String minOutput = "Min:";
+        minOutput.concat(minReading);
+        String avgOutput = "Avg:";
+        avgOutput.concat(avgReading);
+        oled.setCursor(0, 0);
+        oled.clear(PAGE); // Clear the buffer
+        oled.print(output);
+        oled.setCursor(0, 10);
+        oled.print(minOutput);
+        oled.setCursor(0, 20);
+        oled.print(avgOutput);
+        oled.display(); // Draw on the screen
         tick = 0;
       }
       /* time to block the task until the queue has free space */

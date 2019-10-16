@@ -1,42 +1,136 @@
 // Global config variables
 enclosure_height = 16;
-enclosure_length = 105; // Note: 105mm was a bit too small. Recommend going to 110mm 
+enclosure_length = 105; // Note: 105mm was a bit too small. Recommend going to 110mm at some point.
 enclosure_width = 60.5;
 enclosure_radius = 40;
 wall_thickness = 1.6;
 $fn = 64; // curved resolution (used for cylinders and spheres)
 
-// Battery
-translate([2,24,2]) {
-    // 500 mAh
-    //#cube([29,36,5]);
-    // 400 mAh
-    //#cube([26,37,5]);
-}
-
-// Feather board
-translate([enclosure_width - 27,wall_thickness,5]) {
-    //#thingPlusBoard();
-}
-
 //enclosureBase();
-// Position all of the modules
+
+//#displayInternalParts();
+
+//internalSupport();
+
 translate([9,-50,0]) {
-    lensRound();
+    //lensRound(0.4);
+    //lensRound(6);
 }
 
 translate([-enclosure_width - 10,0,0]) {
-    //enclosureLid();
+    difference() {
+        enclosureLid();
+        translate([19.3,30.3,-2]) {
+            cube([17.4, 14.4, 5]);
+        }
+        translate([29.4,37.5,-0.1]) {
+            rotate([0,0,45])cylinder(8,12,4,$fn=4);
+        }
+        translate([26.4,37.5,-0.1]) {
+            rotate([0,0,45])cylinder(8,12,4,$fn=4);
+        }
+
+    }
+}
+
+module internalSupport() {
+    support_padding = wall_thickness + 0.1;
+    support_offset = 50;
+    support_length = enclosure_length - support_offset - support_padding;
+    support_width = enclosure_width - support_padding * 2;
+    
+    translate([enclosure_width / 2 - 12.4,support_offset + 30,9]) {
+        cylinder(r=3, h=2.2);
+        cylinder(r=1.47, h=4);
+    }
+    translate([enclosure_width / 2 + 9,support_offset + 30,9]) {
+        cylinder(r=3, h=2.2);
+        cylinder(r=1.47, h=4);
+    }
+    translate([enclosure_width / 2 - 11.8,support_offset + 3,9]) {
+        cylinder(r=3, h=2);
+    }
+    translate([enclosure_width / 2 + 9,support_offset + 18,9]) {
+        cylinder(r=3, h=2);
+    }
+    
+    difference() {
+        translate([support_padding,support_offset,9]) {
+            difference() {
+                rcube([support_width, support_length,1.2], 5);
+                translate([6,21,-2]) {
+                    cube([7, support_length - 26, 5]);
+                }
+                translate([support_width - 16,21,-2]) {
+                    cube([10, support_length - 26, 5]);
+                }
+                translate([support_width / 2 - support_width / 8 - 1.7,support_length - 38,-2]) {
+                    cube([support_width / 4, 20, 5]);
+                }
+                translate([support_width / 2 - support_width / 8 - 1.7,support_length - 12,-2]) {
+                    cube([support_width / 4, 6, 5]);
+                }
+                translate([support_width / 2 - support_width / 8 - 1.7,-1,-2]) {
+                    cube([support_width, 14, 5]);
+                }
+                translate([support_width / 2 - support_width / 8 - 5,-1,-2]) {
+                    cube([support_width, 4, 5]);
+                }
+            }
+        }
+        translate([3.5 + support_padding,enclosure_length - 3.5 - support_padding,6]) {
+            cylinder(r=1.4, h=(10 - support_padding));
+        }
+        translate([enclosure_width - 3.5 - support_padding,enclosure_length - 3.5 - support_padding,6]) {
+            cylinder(r=1.4, h=(10 - support_padding));
+        }
+        translate([enclosure_width - 2.5 - support_padding,support_offset + 17.5 + support_padding,6]) {
+            cylinder(r=1.4, h=(10 - support_padding));
+        }
+        translate([3.5 + support_padding,support_offset + 17.5 + support_padding,6]) {
+            cylinder(r=1.4, h=(10 - support_padding));
+        }
+        translate([0,60.8,6]) {
+            cube([12.4, 2, 12]);
+        }
+    }
+}
+
+module displayInternalParts() {
+    // Power switch
+    translate([10,-1.2,4])cube([14.2,12,8.8]);
+    translate([12,-3.4,5])rotate([0,0,20])cube([10,3,7]);
+    translate([13,10,6])cube([1.2,6,4]);
+    translate([20,10,6])cube([1.2,6,4]);
+    
+    // Battery
+    translate([2,24,2]) {
+        // 500 mAh
+        cube([29,36,6]);
+        // 400 mAh
+        //#cube([26,37,5]);
+    }
+
+    // Feather board
+    translate([enclosure_width - 27,wall_thickness,5]) {
+        thingPlusBoard();
+    }
+    
+    // OLED
+    
 }
 
 module enclosureLid() {
+    lid_offset = wall_thickness + 0.1;
     rcube([enclosure_width,enclosure_length,wall_thickness], 6);
-
+    translate([wall_thickness,58,lid_offset - 0.1])cube([enclosure_width - wall_thickness * 2, 2, 1.8]);
+    translate([enclosure_width/2 - 3,58,lid_offset - 0.1])cube([2, 44, 1.8]);
+    translate([enclosure_width - 12,lid_offset,lid_offset - 0.1])cube([2, 58, 1.8]);
     difference() {
-        lid_offset = wall_thickness + 0.1;
+        
         // Make the cylinder hollow
-        translate([lid_offset,lid_offset,lid_offset - 0.1]) {
-            rcube([enclosure_width - lid_offset * 2, enclosure_length - lid_offset * 2,2.5], 5.2);
+        translate([wall_thickness,lid_offset,lid_offset - 0.1]) {
+            rcube([enclosure_width - wall_thickness * 2, enclosure_length - lid_offset * 2,2.6], 5.2);
           inner_height = enclosure_height;
           inner_radius = enclosure_radius - (lid_offset * 2);
         }
@@ -50,7 +144,7 @@ module enclosureLid() {
 
 module enclosureBase() {
     difference() {
-        buildBase();
+        enclosureWalls();
         // Micro usb slot
         translate([enclosure_width - 19.4,-1,5.7])cube([8.8,4,3.8]);
         // Power switch
@@ -110,8 +204,8 @@ module rcube(size, radius) {
     }
 }
 
-// Base of enclosure
-module buildBase() {
+// Draw exterior walls for the enclosure
+module enclosureWalls() {
     translate([7,enclosure_length - 30,1]) {
         rotate([0,0,14]) {
             cube([4,3,3.6]);
@@ -165,7 +259,7 @@ module radialVents(verticalSpacing, horizontalSpacing, size, numRows, ventRadius
     }
 }
 
-// Featherboard with usb
+// Thing Plus with usb
 module thingPlusBoard() {
     difference() {
         rcube([23.8,59,1.19], 2.5);
@@ -174,6 +268,9 @@ module thingPlusBoard() {
     }
     translate([7.9,-1.6,1]) {
         cube([8, 5, 2.7]);
+    }
+    translate([1.4,30,1]) {
+        cube([20.5, 20, 4]);
     }
     translate([1.4,48,1]) {
         cube([20.5, 11, 2]);
@@ -240,42 +337,43 @@ module frictionmount(pegRadius, pegHeight = 7, lift = 0) {
     cylinder(r=pegRadius, h= (pegHeight + lift));
 }
 
-module lensRound() {
+module lensRound(lensHeight = 0) {
     difference() {
-        translate([21,21,0]) cylinder(r=44/2,h=8);
+        translate([21,21,0]) cylinder(r=44/2,h=2 + lensHeight);
         translate([21,21,1]) cylinder(r=38/2,h=14);
         translate([21, 21, 0])roundCamera();
     }
     difference() {
-        translate([21,21,0]) cylinder(r=40/2,h=12);
+        translate([21,21,0]) cylinder(r=40/2,h=6 + lensHeight);
         translate([21,21,1]) cylinder(r=38/2,h=15);
-        translate([21, 21, 0])roundCamera();
-        translate([15,39,9.5])rotate([0,0,0])#cube([12,3,3]);
+        #translate([21, 21, 0])roundCamera();
+        translate([10,36,3.5 + lensHeight])rotate([0,0,0])cube([20,5,3]);
     }
-    translate([19.5,-1,10.2])cube([2.7,3.5,1.8]);
-    translate([19.5,-1,10.2])rotate([0,0,11])cube([2.7,3,1.8]);
-    translate([14.5,39,10])rotate([0,0,114])cube([2,3,2]);
-    translate([10.8,10.8,0])screwmountA();
-    translate([10.8,31.2,0])screwmountC();
-    translate([31.2,31.2,0])screwmountA();
-    translate([31.2,10.8,0])screwmountC();
+    translate([22.5,-1,4.2 + lensHeight])rotate([0,0,6])cube([2.7,3.5,1.8]);
+    translate([22.5,-1,4.2 + lensHeight])rotate([0,0,16])cube([2.7,3,1.8]);
+    translate([8.5,35.3,4 + lensHeight])rotate([0,0,133])cube([2,3,2]);
+    translate([10.8,10.8,0])screwmountA(lensHeight);
+    translate([10.8,31.2,0])screwmountC(lensHeight);
+    translate([31.2,31.2,0])screwmountA(lensHeight);
+    translate([31.2,10.8,0])screwmountC(lensHeight);
 }
+
 
 module roundCamera() {
-    translate([0,0, -1])cylinder(r=9/2,h=12);
-    translate([0,0, -2])cylinder(r1=16/2, r2=9/2,h=3);
+    translate([0,0, -1])cylinder(r=9.4/2,h=12);
+    translate([0,0, -2])cylinder(r1=16/2, r2=9.4/2,h=3);
 }
 
-module screwmountA() {        
-    cylinder(r=4, h=6);
+module screwmountA(lift = 6) {        
+    cylinder(r=4, h=lift + 2);
     difference() {
-        cylinder(r=3, h=12);
-        cylinder(r=1.35, h=14); 
+        cylinder(r=3, h= lift + 6);
+        cylinder(r=1.35, h= lift + 8); 
     }
 }
 
-module screwmountC() {        
-    cylinder(r=4, h=8);
-    cylinder(r=3, h=12);
-    cylinder(r=1.5, h=14); 
+module screwmountC(lift = 6) {        
+    cylinder(r=4, h=lift + 2);
+    cylinder(r=3, h=lift + 6);
+    cylinder(r=1.45, h=lift + 8); 
 }
