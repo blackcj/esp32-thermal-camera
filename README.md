@@ -1,6 +1,6 @@
 # ESP32 Thermal Camera
 
-(MLX90640 thermal camera)[https://www.sparkfun.com/products/14844] connected to a (SparkFun Thing Plus - ESP32 WROOM)[https://www.sparkfun.com/products/14689]
+[MLX90640 thermal camera](https://www.sparkfun.com/products/14844) connected to a [SparkFun Thing Plus - ESP32 WROOM](https://www.sparkfun.com/products/14689)
 
 ![Screen Shot](enclosure/camera01.jpg)
 
@@ -19,7 +19,7 @@
 
 ## Mac Drivers
 
-If using a Mac, you will need to install the following (drivers)[https://www.silabs.com/products/development-tools/software/usb-to-uart-bridge-vcp-drivers] to flash the ESP32. More information can be found (here)[https://github.com/espressif/arduino-esp32/issues/1084].
+If using a Mac, you will need to install the following [drivers](https://www.silabs.com/products/development-tools/software/usb-to-uart-bridge-vcp-drivers) to flash the ESP32. More information can be found [here](https://github.com/espressif/arduino-esp32/issues/1084).
 
 ## Setup
 
@@ -28,7 +28,7 @@ If using a Mac, you will need to install the following (drivers)[https://www.sil
    static const char* wifi_ssid = "YOUR_WIFI_SSID";
    static const char* wifi_pw = "YOU_WIFI_PW";
    ```
-2. Connect your SparkFun Thing Plus - ESP32 WROOM using this (guide)[https://learn.sparkfun.com/tutorials/esp32-thing-plus-hookup-guide] 
+2. Connect your SparkFun Thing Plus - ESP32 WROOM using this [guide](https://learn.sparkfun.com/tutorials/esp32-thing-plus-hookup-guide) 
 3. Make sure to select **Adafruit ESP32 Feather** in the Arduino IDE
 4. Install the following libraries
    - SparkFun_Micro_OLED_Breakout
